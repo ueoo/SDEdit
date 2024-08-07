@@ -1,51 +1,51 @@
 import argparse
-import traceback
-import shutil
-import logging
-import yaml
-import sys
-import os
-import torch
-import numpy as np
-import torch.utils.tensorboard as tb
 import copy
+import logging
+import os
+import shutil
+import sys
+import traceback
+
+import numpy as np
+import torch
+import yaml
 
 from runners.image_editing import Diffusion
 
 
 def parse_args_and_config():
-    parser = argparse.ArgumentParser(description=globals()['__doc__'])
-    parser.add_argument('--config', type=str, required=True, help='Path to the config file')
-    parser.add_argument('--seed', type=int, default=1234, help='Random seed')
-    parser.add_argument('--exp', type=str, default='exp', help='Path for saving running related data.')
-    parser.add_argument('--comment', type=str, default='', help='A string for experiment comment')
-    parser.add_argument('--verbose', type=str, default='info', help='Verbose level: info | debug | warning | critical')
-    parser.add_argument('--sample', action='store_true', help='Whether to produce samples from the model')
-    parser.add_argument('-i', '--image_folder', type=str, default='images', help="The folder name of samples")
-    parser.add_argument('--ni', action='store_true', help="No interaction. Suitable for Slurm Job launcher")
-    parser.add_argument('--npy_name', type=str, required=True)
-    parser.add_argument('--sample_step', type=int, default=3, help='Total sampling steps')
-    parser.add_argument('--t', type=int, default=400, help='Sampling noise scale')
+    parser = argparse.ArgumentParser(description=globals()["__doc__"])
+    parser.add_argument("--config", type=str, required=True, help="Path to the config file")
+    parser.add_argument("--seed", type=int, default=1234, help="Random seed")
+    parser.add_argument("--exp", type=str, default="exp", help="Path for saving running related data.")
+    parser.add_argument("--comment", type=str, default="", help="A string for experiment comment")
+    parser.add_argument("--verbose", type=str, default="info", help="Verbose level: info | debug | warning | critical")
+    parser.add_argument("--sample", action="store_true", help="Whether to produce samples from the model")
+    parser.add_argument("-i", "--image_folder", type=str, default="images", help="The folder name of samples")
+    parser.add_argument("--ni", action="store_true", help="No interaction. Suitable for Slurm Job launcher")
+    parser.add_argument("--mask_image_file", type=str, required=True)
+    parser.add_argument("--sample_step", type=int, default=3, help="Total sampling steps")
+    parser.add_argument("--t", type=int, default=400, help="Sampling noise scale")
     args = parser.parse_args()
 
     # parse config file
-    with open(os.path.join('configs', args.config), 'r') as f:
+    with open(args.config, "r") as f:
         config = yaml.safe_load(f)
     new_config = dict2namespace(config)
 
     level = getattr(logging, args.verbose.upper(), None)
     if not isinstance(level, int):
-        raise ValueError('level {} not supported'.format(args.verbose))
+        raise ValueError(f"level {args.verbose} not supported")
 
     handler1 = logging.StreamHandler()
-    formatter = logging.Formatter('%(levelname)s - %(filename)s - %(asctime)s - %(message)s')
+    formatter = logging.Formatter("%(levelname)s - %(filename)s - %(asctime)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
     handler1.setFormatter(formatter)
     logger = logging.getLogger()
     logger.addHandler(handler1)
     logger.setLevel(level)
 
-    os.makedirs(os.path.join(args.exp, 'image_samples'), exist_ok=True)
-    args.image_folder = os.path.join(args.exp, 'image_samples', args.image_folder)
+    os.makedirs(args.exp, exist_ok=True)
+    args.image_folder = os.path.join(args.exp, args.image_folder)
     if not os.path.exists(args.image_folder):
         os.makedirs(args.image_folder)
     else:
@@ -54,7 +54,7 @@ def parse_args_and_config():
             overwrite = True
         else:
             response = input("Image folder already exists. Overwrite? (Y/N)")
-            if response.upper() == 'Y':
+            if response.upper() == "Y":
                 overwrite = True
 
         if overwrite:
@@ -65,8 +65,8 @@ def parse_args_and_config():
             sys.exit(0)
 
     # add device
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    logging.info("Using device: {}".format(device))
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    # logging.info(f"Using device: {device}")
     new_config.device = device
 
     # set random seed
@@ -94,9 +94,17 @@ def dict2namespace(config):
 def main():
     args, config = parse_args_and_config()
     print(">" * 80)
-    logging.info("Exp instance id = {}".format(os.getpid()))
-    logging.info("Exp comment = {}".format(args.comment))
-    logging.info("Config =")
+    logging.info(f"Exp instance id = {os.getpid()}")
+    if args.comment != "":
+        logging.info(f"Exp comment = {args.comment}")
+    logging.info(f"Config: ")
+    for key, value in vars(config).items():
+        if isinstance(value, argparse.Namespace):
+            logging.info(f"  {key}:")
+            for k, v in vars(value).items():
+                logging.info(f"    {k} = {v}")
+        else:
+            logging.info(f"  {key} = {value}")
     print("<" * 80)
 
     try:
@@ -108,5 +116,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
