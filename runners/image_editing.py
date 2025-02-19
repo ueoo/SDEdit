@@ -89,11 +89,11 @@ class Diffusion(object):
         #     raise ValueError
         if self.config.data.dataset == "LSUN":
             if self.config.data.category == "bedroom":
-                model_ckpt_path = "checkpoints/diffusion_lsun_bedroom_model/model-2388000.ckpt"
+                model_ckpt_path = "/fast/ddim_checkpoints/diffusion_lsun_bedroom_model/model-2388000.ckpt"
             elif self.config.data.category == "church_outdoor":
-                model_ckpt_path = "checkpoints/diffusion_lsun_church_model/model-4432000.ckpt"
+                model_ckpt_path = "/fast/ddim_checkpoints/diffusion_lsun_church_model/model-4432000.ckpt"
         elif self.config.data.dataset == "CelebA_HQ":
-            model_ckpt_path = "checkpoints/celeba_hq.ckpt"
+            model_ckpt_path = "/fast/ddim_checkpoints/celeba_hq.ckpt"
         else:
             raise ValueError
 
